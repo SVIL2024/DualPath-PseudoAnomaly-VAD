@@ -153,9 +153,6 @@ class Mem(nn.Module):
         return out
 
 class Encoder(nn.Module):
-    """
-    编码器模块：包含所有下采样层
-    """
     def __init__(self, num_in_ch, features_root):
         super(Encoder, self).__init__()
         self.in_conv = inconv(num_in_ch, features_root)
@@ -168,14 +165,10 @@ class Encoder(nn.Module):
         x1 = self.down_1(x0)
         x2 = self.down_2(x1)
         x3 = self.down_3(x2)
-        # 返回所有中间特征图，用于解码器的跳跃连接
         return x3, x2, x1, x0
 
 
 class Decoder(nn.Module):
-    """
-    解码器模块：包含所有上采样层
-    """
     def __init__(self, features_root, num_out_ch, skip_ops):
         super(Decoder, self).__init__()
         self.skip_ops = skip_ops
@@ -185,8 +178,6 @@ class Decoder(nn.Module):
         self.out_conv = outconv(features_root, num_out_ch)
 
     def forward(self, x3, x2, x1, x0):
-        # x3 是来自记忆模块的瓶颈特征
-        # x2, x1, x0 是来自编码器的跳跃连接特征
         recon1 = self.up_3(x3, x2 if self.skip_ops[-1] != "none" else None)
         recon2 = self.up_2(recon1, x1 if self.skip_ops[-2] != "none" else None)
         recon3 = self.up_1(recon2, x0 if self.skip_ops[-3] != "none" else None)
@@ -194,9 +185,6 @@ class Decoder(nn.Module):
         return recon, recon3, recon2, recon1
 
 class Decoder0(nn.Module):
-    """
-    解码器模块：包含所有上采样层
-    """
     def __init__(self, features_root, num_out_ch, skip_ops):
         super(Decoder0, self).__init__()
         self.skip_ops = skip_ops
@@ -206,8 +194,6 @@ class Decoder0(nn.Module):
         self.out_conv = outconv(features_root, num_out_ch)
 
     def forward(self, x3, x2, x1, x0):
-        # x3 是来自记忆模块的瓶颈特征
-        # x2, x1, x0 是来自编码器的跳跃连接特征
         recon1 = self.up_3(x3, x2 if self.skip_ops[-1] != "none" else None)
         recon2 = self.up_2(recon1, x1 if self.skip_ops[-2] != "none" else None)
         recon3 = self.up_1(recon2, x0 if self.skip_ops[-3] != "none" else None)

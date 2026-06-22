@@ -3,6 +3,7 @@ import copy
 import warnings
 from Yolov3.mynewdetect import *
 from torchvision.datasets.cifar import CIFAR100
+import torch
 import torch.utils.data as data
 
 
@@ -39,7 +40,7 @@ def generate_pseudo_anomalies(net_in, yolo_model, cifar_loader, cifar_iter, devi
 				output='temp_output',
 				conf_thres=0.3,
 				iou_thres=0.5,
-				device='cuda',
+				device=str(device),
 				classes=[0],
 				channel_in=channel_in
 			)
@@ -69,14 +70,35 @@ def init_dependencies(cifar_path='dataset/cifar100',
 	cifar_trans = transforms.Compose(cifar_trans_list)
 	cifar_data = CIFAR100(root=cifar_path, train=True, transform=cifar_trans, download=True)
 
-	cifar_loader = data.DataLoader(cifar_data, batch_size=1, shuffle=True, drop_last=True)
+	try:
+		cifar_generator = torch.Generator(device='cpu')
+	except TypeError:
+		cifar_generator = torch.Generator()
+	cifar_generator.manual_seed(torch.initial_seed())
+
+	cifar_loader = data.DataLoader(
+		cifar_data,
+		batch_size=1,
+		shuffle=True,
+		drop_last=True,
+		generator=cifar_generator
+	)
 	cifar_iter = iter(cifar_loader)
 
 	yolo_model = Darknet(cfg=yolo_cfg)
 
 	with warnings.catch_warnings():
 		warnings.filterwarnings("ignore", category=FutureWarning)
-		yolo_weights = torch.load(yolo_weights, map_location=torch.device(device))['model']
+		try:
+			checkpoint = torch.load(
+				yolo_weights,
+				map_location=torch.device(device),
+				weights_only=False
+			)
+		except TypeError:
+			# PyTorch versions before 2.0 do not expose weights_only.
+			checkpoint = torch.load(yolo_weights, map_location=torch.device(device))
+		yolo_weights = checkpoint['model']
 	yolo_model.load_state_dict(yolo_weights)
 	yolo_model.to(device).eval()
 
