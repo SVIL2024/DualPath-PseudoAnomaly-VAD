@@ -173,8 +173,12 @@ class LoadImagesOnly:  # for inference
 
 class LoadTensor:
     def __init__(self, tensor, half=False, channel_in=1):
-        assert len(tensor.shape) == 4 and tensor.shape[0] in [1, 3] and tensor.shape[1] == 16 and tensor.shape[2] == 256 and tensor.shape[3] == 256, f"输入张量的形状应为 [1 or 3, 16, 256, 256], 但得到了 {tensor.shape}"
-        # assert len(tensor.shape) == 4 and tensor.shape[0] == 1 and tensor.shape[1] == 16 and tensor.shape[2] == 256 and tensor.shape[3] == 256, "输入张量的形状应为 torch.Size([1, 16, 256, 256])"
+        assert len(tensor.shape) == 4, \
+            f"输入张量的形状应为 [C, T, H, W], 但得到了 {tensor.shape}"
+        assert tensor.shape[0] == channel_in and channel_in in [1, 3], \
+            f"输入通道应为 {channel_in}, 但得到了 {tensor.shape[0]}"
+        assert tensor.shape[1] == 16 and tensor.shape[2] > 0 and tensor.shape[3] > 0, \
+            f"输入张量应包含 16 帧有效图像, 但得到了 {tensor.shape}"
         self.tensor = tensor
         self.channel_in = channel_in
         self.nF=tensor.shape[1]
